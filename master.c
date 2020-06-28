@@ -130,7 +130,24 @@ pid_t task_exec(struct task t)
 
 	if (pid == 0) {
 		/* the child process */
-		/* TODO: exec the slave */
+		if (t.out != NULL) {
+			if (freopen(t.out, "w", stdout) == NULL) {
+				perror("Cannot open output file");
+				return -1;
+			}
+		}
+		if (t.err != NULL) {
+			if (freopen(t.err, "w", stderr) == NULL) {
+				perror("Cannot open output file");
+				return -1;
+			}
+		}
+		if (t.cwd != NULL) {
+			if (chdir(t.cwd) < 0) {
+				perror("Cannot change working directory");
+				return -1;
+			}
+		}
 		execvp(t.argv[0], t.argv);
 		perror("Cannot run the requested command");
 		return -1;
@@ -226,6 +243,7 @@ int queue_pop_(struct queue **node)
 		int status;
 
 		pid_t pid = waitpid((*node)->pid, &status, WNOHANG);
+
 		if (pid == -1 || pid == (*node)->pid) {
 			/* process already removed, or right now removed */
 			++slots;
@@ -274,10 +292,10 @@ void dump()
 
 int main(/*int argc, char *argv[]*/)
 {
-	char *a[] = { "sleep", "2", NULL };
+	char *args[] = { "sleep", "2", NULL };
 
 	for (int i = 0; i < 10; ++i) {
-		task_submit(task_create(NULL, NULL, NULL, 2, a));
+		task_submit(task_create(NULL, NULL, NULL, 2, args));
 	}
 
 	while (1) {
